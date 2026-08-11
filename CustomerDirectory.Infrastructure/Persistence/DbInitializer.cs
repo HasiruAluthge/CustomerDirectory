@@ -15,7 +15,7 @@ public static class DbInitializer
 
         var rnd = new Random(42); // fixed seed => reproducible dev data
         var statuses = new[] { CustomerStatus.Active, CustomerStatus.Active, CustomerStatus.Inactive };
-        var customers = Enumerable.Range(1, 25).Select(i => new Customer
+        var customers = Enumerable.Range(1, 3).Select(i => new Customer
         {
             CustomerNumber = $"CUS-{i:D5}",
             FullName = $"Seed Customer {i}",
