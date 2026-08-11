@@ -15,14 +15,31 @@
     const modalEl = document.getElementById("customerModal");
     const modal = new bootstrap.Modal(modalEl);
     const form = document.getElementById("customerForm");
-    const emailInput = document.getElementById("email");
+    const emailInput = document.getElementById("email")
 
+    const phoneInput = document.getElementById("phone");
+    const phonePattern = /^[0-9+\-\s()]{7,25}$/;
+
+    // Phone Number Validation
+    phoneInput.addEventListener("blur", () => {
+        if (phoneInput.value && !phonePattern.test(phoneInput.value)) {
+            phoneInput.classList.add("is-invalid");
+            document.getElementById("err-Phone").textContent = "Phone number can only contain digits, spaces, and + - ( ) symbols.";
+            document.getElementById("err-Phone").style.display = "block";
+        } else {
+            phoneInput.classList.remove("is-invalid");
+            document.getElementById("err-Phone").style.display = "none";
+        }
+    });
+
+    // email input validation 
     emailInput.addEventListener("blur", (e) => {
         if (!emailInput.checkValidity()) {
             e.preventDefault();
             emailInput.classList.add("is-invalid");
             document.getElementById("err-Email").textContent = "Please enter a valid email address.";
             document.getElementById("err-Email").style.display = "block";
+
             // Refocus after the browser finishes processing the blur event
             setTimeout(() => emailInput.focus(), 0);
         } else {
@@ -208,7 +225,7 @@
         }
     }
 
-    // Never insert raw user input as HTML — this is the "encode displayed values" requirement.
+    
     function escapeHtml(str) {
         const div = document.createElement("div");
         div.textContent = str ?? "";
