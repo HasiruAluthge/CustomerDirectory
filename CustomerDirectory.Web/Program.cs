@@ -12,7 +12,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 // Add controllers with views
 builder.Services.AddControllersWithViews();
-
+// Add antiforgery services with a custom header name
+builder.Services.AddAntiforgery(options => options.HeaderName = "RequestVerificationToken");
+// Add a global filter to automatically validate antiforgery tokens for unsafe HTTP methods
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<CustomerDirectory.Web.Filters.AutoValidateAntiforgeryTokenFilter>();
+});
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
