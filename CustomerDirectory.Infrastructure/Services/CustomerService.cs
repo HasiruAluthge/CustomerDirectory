@@ -70,7 +70,8 @@ public class CustomerService : ICustomerService
         var now = DateTime.UtcNow;
         var customer = new Customer
         {
-            CustomerNumber = await GenerateCustomerNumberAsync(ct),
+            // placeholder; will set stable CustomerNumber after first save
+            CustomerNumber = string.Empty,
             FullName = dto.FullName.Trim(),
             Email = dto.Email.Trim(),
             Phone = dto.Phone.Trim(),
@@ -81,10 +82,38 @@ public class CustomerService : ICustomerService
         };
 
         _db.Customers.Add(customer);
-        await _db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Customer {CustomerId} ({CustomerNumber}) created", customer.Id, customer.CustomerNumber);
-        return (true, ToDetailDto(customer), null);
+        try
+        {
+            // Persist to obtain the generated Id
+            await _db.SaveChangesAsync(ct);
+
+            // Assign a stable unique customer number based on Id and save again
+            customer.CustomerNumber = $"CUS-{customer.Id:D5}";
+            customer.UpdatedAtUtc = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+
+            _logger.LogInformation("Customer {CustomerId} ({CustomerNumber}) created", customer.Id, customer.CustomerNumber);
+            return (true, ToDetailDto(customer), null);
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx)
+        {
+            _logger.LogError(dbEx, "Failed to create customer for email {Email}", dto.Email);
+
+            var inner = dbEx.InnerException?.Message ?? dbEx.Message;
+            // SQLite and other providers mention UNIQUE or UNIQUE constraint failed
+            if (inner.Contains("UNIQUE", StringComparison.OrdinalIgnoreCase) ||
+                inner.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase) ||
+                inner.Contains("constraint", StringComparison.OrdinalIgnoreCase))
+            {
+                // Map likely unique constraint on Email to client-facing validation error
+                errors["Email"] = new[] { "A customer with this email already exists." };
+                return (false, null, errors);
+            }
+
+            // Unknown DB error: rethrow so it becomes a 500 and is logged for investigation
+            throw;
+        }
     }
 
     public async Task<(bool, CustomerDetailDto?, string?, bool)> UpdateAsync(

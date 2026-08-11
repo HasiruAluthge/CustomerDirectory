@@ -1,0 +1,41 @@
+﻿:root {
+    --bs-primary: #198754;
+    --bs-primary-rgb: 25, 135, 84;
+    --bs-primary-text-emphasis: #0f5132;
+    --bs-primary-bg-subtle: #d1e7dd;
+    --bs-primary-border-subtle: #a3cfbb;
+}
+
+.btn-primary {
+    --bs-btn-bg: #198754;
+    --bs-btn-border-color: #198754;
+    --bs-btn-hover-bg: #157347;
+    --bs-btn-hover-border-color: #146c43;
+    --bs-btn-active-bg: #146c43;
+    --bs-btn-active-border-color: #13653f;
+}
+
+.btn-outline-primary {
+    --bs-btn-color: #198754;
+    --bs-btn-border-color: #198754;
+    --bs-btn-hover-bg: #198754;
+    --bs-btn-hover-border-color: #198754;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #198754;
+    box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+}
+
+.badge.bg-success {
+    background-color: #198754 !important;
+}
+
+.toast.text-bg-success {
+    --bs-toast-bg: #198754;
+}
+
+h1, .navbar-brand {
+    color: #146c43;
+}

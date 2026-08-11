@@ -12,6 +12,158 @@
         return document.querySelector('input[name="__RequestVerificationToken"]').value;
     }
 
+    const modalEl = document.getElementById("customerModal");
+    const modal = new bootstrap.Modal(modalEl);
+    const form = document.getElementById("customerForm");
+    const emailInput = document.getElementById("email");
+
+    emailInput.addEventListener("blur", (e) => {
+        if (!emailInput.checkValidity()) {
+            e.preventDefault();
+            emailInput.classList.add("is-invalid");
+            document.getElementById("err-Email").textContent = "Please enter a valid email address.";
+            document.getElementById("err-Email").style.display = "block";
+            // Refocus after the browser finishes processing the blur event
+            setTimeout(() => emailInput.focus(), 0);
+        } else {
+            emailInput.classList.remove("is-invalid");
+            document.getElementById("err-Email").style.display = "none";
+        }
+    });
+
+    const toastEl = document.getElementById("toast");
+    const toast = new bootstrap.Toast(toastEl);
+    let isSubmitting = false;
+
+    document.getElementById("btnNewCustomer").addEventListener("click", () => openModal(null));
+
+    rowsEl.addEventListener("click", async (e) => {
+        const editBtn = e.target.closest(".btn-edit");
+        const deleteBtn = e.target.closest(".btn-delete");
+        if (editBtn) await openModal(editBtn.dataset.id);
+        if (deleteBtn) await handleDelete(deleteBtn.dataset.id, deleteBtn.dataset.name);
+    });
+
+    async function openModal(id) {
+        clearErrors();
+        form.reset();
+        document.getElementById("customerId").value = id ?? "";
+        document.getElementById("statusField").style.display = id ? "block" : "none";
+        document.getElementById("customerModalTitle").textContent = id ? "Edit Customer" : "New Customer";
+
+        if (id) {
+            const res = await fetch(`/api/customers/${id}`);
+            if (res.ok) {
+                const c = await res.json();
+                document.getElementById("fullName").value = c.fullName;
+                document.getElementById("email").value = c.email;
+                document.getElementById("phone").value = c.phone;
+                document.getElementById("address").value = c.address ?? "";
+                document.getElementById("status").value = c.status;
+            } else if (res.status === 404) {
+                showToast("That customer no longer exists.", true);
+                CustomerGrid.refresh();
+                return;
+            }
+        }
+        modal.show();
+    }
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (isSubmitting) return; // prevents double submission
+        isSubmitting = true;
+        document.getElementById("btnSave").disabled = true;
+        clearErrors();
+
+        const id = document.getElementById("customerId").value;
+        const payload = {
+            fullName: document.getElementById("fullName").value,
+            email: document.getElementById("email").value,
+            phone: document.getElementById("phone").value,
+            address: document.getElementById("address").value || null,
+            ...(id ? { status: document.getElementById("status").value } : {})
+        };
+
+        try {
+            const res = await fetch(id ? `/api/customers/${id}` : "/api/customers", {
+                method: id ? "PUT" : "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "RequestVerificationToken": antiForgeryToken()
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.status === 200 || res.status === 201) {
+                modal.hide();
+                showToast(id ? "Customer updated." : "Customer created.");
+                CustomerGrid.refresh();
+            } else if (res.status === 400) {
+                const problem = await res.json();
+                renderFieldErrors(problem.errors);
+            } else if (res.status === 404) {
+                showToast("That customer no longer exists.", true);
+                modal.hide();
+                CustomerGrid.refresh();
+            } else if (res.status === 409) {
+                const problem = await res.json();
+                renderFieldErrors({ Email: [problem.message] });
+            } else {
+                showToast("Something went wrong. Please try again.", true);
+            }
+        } catch {
+            showToast("Network error. Please try again.", true);
+        } finally {
+            isSubmitting = false;
+            document.getElementById("btnSave").disabled = false;
+        }
+    });
+
+    async function handleDelete(id, name) {
+        if (!confirm(`Delete customer "${name}"? This cannot be undone.`)) return;
+
+        try {
+            const res = await fetch(`/api/customers/${id}`, {
+                method: "DELETE",
+                headers: { "RequestVerificationToken": antiForgeryToken() }
+            });
+
+            if (res.status === 204) {
+                showToast("Customer deleted.");
+                CustomerGrid.refresh();
+            } else if (res.status === 404) {
+                showToast("Customer was already removed.", true);
+                CustomerGrid.refresh();
+            } else {
+                showToast("Could not delete customer.", true);
+            }
+        } catch {
+            showToast("Network error. Please try again.", true);
+        }
+    }
+
+    function renderFieldErrors(errors) {
+        for (const [field, messages] of Object.entries(errors || {})) {
+            const el = document.getElementById(`err-${field}`);
+            const input = document.getElementById(field.charAt(0).toLowerCase() + field.slice(1));
+            if (el) { el.textContent = messages.join(" "); el.style.display = "block"; }
+            if (input) input.classList.add("is-invalid");
+        }
+    }
+
+    function clearErrors() {
+        document.querySelectorAll(".invalid-feedback").forEach(el => { el.textContent = ""; el.style.display = "none"; });
+        document.querySelectorAll(".is-invalid").forEach(el => el.classList.remove("is-invalid"));
+    }
+
+    function showToast(message, isError = false) {
+        document.getElementById("toastBody").textContent = message;
+        toastEl.classList.toggle("text-bg-success", !isError);
+        toastEl.classList.toggle("text-bg-danger", isError);
+        toast.show();
+    }
+
     async function fetchCustomers() {
         loadingEl.classList.remove("d-none");
         errorEl.classList.add("d-none");
