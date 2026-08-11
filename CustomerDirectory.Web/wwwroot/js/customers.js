@@ -15,6 +15,22 @@
     const modalEl = document.getElementById("customerModal");
     const modal = new bootstrap.Modal(modalEl);
     const form = document.getElementById("customerForm");
+    const emailInput = document.getElementById("email");
+
+    emailInput.addEventListener("blur", (e) => {
+        if (!emailInput.checkValidity()) {
+            e.preventDefault();
+            emailInput.classList.add("is-invalid");
+            document.getElementById("err-Email").textContent = "Please enter a valid email address.";
+            document.getElementById("err-Email").style.display = "block";
+            // Refocus after the browser finishes processing the blur event
+            setTimeout(() => emailInput.focus(), 0);
+        } else {
+            emailInput.classList.remove("is-invalid");
+            document.getElementById("err-Email").style.display = "none";
+        }
+    });
+
     const toastEl = document.getElementById("toast");
     const toast = new bootstrap.Toast(toastEl);
     let isSubmitting = false;

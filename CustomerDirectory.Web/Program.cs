@@ -28,7 +28,12 @@ builder.Services.AddAntiforgery(options => options.HeaderName = "RequestVerifica
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add<CustomerDirectory.Web.Filters.AutoValidateAntiforgeryTokenFilter>();
-});
+})
+   .AddJsonOptions(options =>
+   {
+       options.JsonSerializerOptions.Converters.Add(
+           new System.Text.Json.Serialization.JsonStringEnumConverter());
+   });
 
 var app = builder.Build();
 
