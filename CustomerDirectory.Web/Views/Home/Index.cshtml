@@ -1,8 +1,89 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Customer Directory";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<h1>Customer Directory</h1>
+
+<div class="d-flex justify-content-between mb-3">
+    <input id="searchBox" class="form-control w-25" placeholder="Search name, email, number..." />
+    <button id="btnNewCustomer" class="btn btn-primary">+ New Customer</button>
 </div>
+
+<div id="gridError" class="alert alert-danger d-none"></div>
+<div id="gridLoading" class="text-muted d-none">Loading...</div>
+
+<table class="table table-hover" id="customerTable">
+    <thead>
+        <tr>
+            <th data-sort="customernumber" style="cursor:pointer">Number</th>
+            <th data-sort="fullname" style="cursor:pointer">Full Name</th>
+            <th data-sort="email" style="cursor:pointer">Email</th>
+            <th>Phone</th>
+            <th data-sort="status" style="cursor:pointer">Status</th>
+            <th data-sort="updatedatutc" style="cursor:pointer">Updated</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="customerRows"></tbody>
+</table>
+
+<div id="emptyState" class="text-center text-muted d-none">No customers found.</div>
+<nav id="pager" class="d-flex justify-content-center gap-2"></nav>
+
+<!-- Modal for create/edit -->
+<div class="modal fade" id="customerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="customerForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="customerModalTitle">New Customer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="customerId" />
+                    <div class="mb-2">
+                        <label class="form-label">Full Name</label>
+                        <input class="form-control" id="fullName" required />
+                        <div class="invalid-feedback" id="err-FullName"></div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Email</label>
+                        <input class="form-control" id="email" type="email" required />
+                        <div class="invalid-feedback" id="err-Email"></div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Phone</label>
+                        <input class="form-control" id="phone" required />
+                        <div class="invalid-feedback" id="err-Phone"></div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Address</label>
+                        <input class="form-control" id="address" />
+                    </div>
+                    <div class="mb-2" id="statusField" style="display:none">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="status">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary" id="btnSave">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast align-items-center text-bg-success position-fixed bottom-0 end-0 m-3" role="alert">
+    <div class="d-flex">
+        <div class="toast-body" id="toastBody"></div>
+        <button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/customers.js"></script>
+}

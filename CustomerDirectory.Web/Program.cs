@@ -1,11 +1,16 @@
 using CustomerDirectory.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using CustomerDirectory.Application.Services;
+using CustomerDirectory.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add services to the container.
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+// Add the DbContext with SQLite provider
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
-
+// Add controllers with views
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
