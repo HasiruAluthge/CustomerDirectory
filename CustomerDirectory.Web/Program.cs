@@ -1,24 +1,35 @@
-using CustomerDirectory.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using CustomerDirectory.Application.Services;
+using CustomerDirectory.Infrastructure.Persistence;
 using CustomerDirectory.Infrastructure.Services;
+using Microsoft.EntityFrameworkCore;
+using Serilog;
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(outputTemplate:
+        "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .WriteTo.File("Logs/log-.txt", rollingInterval: RollingInterval.Day,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}: {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddScoped<ICustomerService, CustomerService>();
-// Add the DbContext with SQLite provider
+builder.Host.UseSerilog();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
-// Add controllers with views
-builder.Services.AddControllersWithViews();
-// Add antiforgery services with a custom header name
+
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+
 builder.Services.AddAntiforgery(options => options.HeaderName = "RequestVerificationToken");
-// Add a global filter to automatically validate antiforgery tokens for unsafe HTTP methods
-builder.Services.AddControllers(options =>
+
+builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add<CustomerDirectory.Web.Filters.AutoValidateAntiforgeryTokenFilter>();
 });
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -29,23 +40,57 @@ if (app.Environment.IsDevelopment())
     DbInitializer.Seed(db);
 }
 
-// Configure the HTTP request pipeline.
+app.Use(async (context, next) =>
+{
+    using (Serilog.Context.LogContext.PushProperty("RequestId", context.TraceIdentifier))
+    {
+        await next();
+    }
+});
+
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(feature?.Error, "Unhandled exception for {Path}", context.Request.Path);
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            await context.Response.WriteAsJsonAsync(new
+            {
+                message = "An unexpected error occurred. Please try again."
+            });
+        });
+    });
     app.UseHsts();
+}
+else
+{
+    app.UseDeveloperExceptionPage();
 }
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.Run();
+try
+{
+    Log.Information("Starting Customer Directory application");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
