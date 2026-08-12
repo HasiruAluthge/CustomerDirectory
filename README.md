@@ -29,16 +29,16 @@ dotnet test
 ```
 
 ## Architecture
-- `CustomerDirectory.Web` – controllers, Razor views, static JS, startup/config.
-- `CustomerDirectory.Application` – DTOs, domain model, service interfaces (no EF Core dependency).
-- `CustomerDirectory.Infrastructure` – EF Core DbContext, migrations, service implementations.
-- `CustomerDirectory.Tests` – xUnit unit tests against the service layer + validation tests.
+- `CustomerDirectory.Web` â€“ controllers, Razor views, static JS, startup/config.
+- `CustomerDirectory.Application` â€“ DTOs, domain model, service interfaces (no EF Core dependency).
+- `CustomerDirectory.Infrastructure` â€“ EF Core DbContext, migrations, service implementations.
+- `CustomerDirectory.Tests` â€“ xUnit unit tests against the service layer + validation tests.
 
 ## Design decisions & assumptions
 - SQLite chosen for zero-setup review, per the assignment's guidance.
 - Duplicate email uniqueness enforced case-insensitively in the service layer (SQLite's default collation is case-sensitive, so the DB unique index alone isn't sufficient); the DB index remains as a backstop.
-- Customer numbers generated as `CUS-#####` from a simple count-based counter — documented race condition under concurrent creates; acceptable for this scope.
-- [Add anything else you decided along the way.]
+- Customer numbers generated as `CUS-#####` from a simple count-based counter â€” documented race condition under concurrent creates; acceptable for this scope.
+
 
 ## Known limitations / what I'd improve with more time
 - No optimistic concurrency token yet (stretch goal).
