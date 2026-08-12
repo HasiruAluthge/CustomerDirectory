@@ -16,7 +16,7 @@ A CRUD web app for managing customer contact records, built with ASP.NET Core MV
 ## Setup
 ```bash
 git clone https://github.com/HasiruAluthge/CustomerDirectory.git
-cd customer-directory
+cd CustomerDirectory
 dotnet restore
 dotnet ef database update --project CustomerDirectory.Infrastructure --startup-project CustomerDirectory.Web
 dotnet run --project CustomerDirectory.Web
